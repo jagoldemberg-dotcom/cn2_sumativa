@@ -1,0 +1,155 @@
+{
+  "info": {
+    "_postman_id": "d6d3dd5b-1d36-4dbe-950b-cn2sumativa0001",
+    "name": "Sumativa Cloud Native II - REST + GraphQL + AWS",
+    "description": "Evidencia para users-function REST, roles-function GraphQL y BFF en AWS EC2.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "usersFunctionBaseUrl",
+      "value": "https://YOUR-USERS-FUNCTION.azurewebsites.net/api"
+    },
+    {
+      "key": "rolesGraphqlUrl",
+      "value": "https://YOUR-ROLES-FUNCTION.azurewebsites.net/api/graphql"
+    },
+    {
+      "key": "bffBaseUrl",
+      "value": "http://YOUR-EC2-PUBLIC-IP:8080"
+    },
+    {
+      "key": "userId",
+      "value": "1"
+    },
+    {
+      "key": "roleId",
+      "value": "1"
+    }
+  ],
+  "item": [
+    {
+      "name": "1 - REST users-function",
+      "item": [
+        {
+          "name": "List users",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{usersFunctionBaseUrl}}/users"
+          }
+        },
+        {
+          "name": "Get user",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{usersFunctionBaseUrl}}/users/{{userId}}"
+          }
+        },
+        {
+          "name": "Create user",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"postman.demo\",\n  \"email\": \"postman.demo@sumativa.local\",\n  \"password\": \"Demo123\"\n}"
+            },
+            "url": "{{usersFunctionBaseUrl}}/users"
+          }
+        }
+      ]
+    },
+    {
+      "name": "2 - GraphQL roles-function",
+      "item": [
+        {
+          "name": "Query roles",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query { roles { id name description } }\"\n}"
+            },
+            "url": "{{rolesGraphqlUrl}}"
+          }
+        },
+        {
+          "name": "Query role by ID",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query($id: ID!) { role(id: $id) { id name description } }\",\n  \"variables\": {\n    \"id\": \"{{roleId}}\"\n  }\n}"
+            },
+            "url": "{{rolesGraphqlUrl}}"
+          }
+        },
+        {
+          "name": "Mutation create role",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation($name: String!, $description: String) { createRole(name: $name, description: $description) { id name description } }\",\n  \"variables\": {\n    \"name\": \"AUDITOR_POSTMAN\",\n    \"description\": \"Creado desde Postman con GraphQL\"\n  }\n}"
+            },
+            "url": "{{rolesGraphqlUrl}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "3 - BFF AWS EC2",
+      "item": [
+        {
+          "name": "Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{bffBaseUrl}}/api/health"
+          }
+        },
+        {
+          "name": "Users through BFF -> REST Function",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{bffBaseUrl}}/api/users"
+          }
+        },
+        {
+          "name": "Roles through BFF -> GraphQL Function",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{bffBaseUrl}}/api/roles"
+          }
+        }
+      ]
+    }
+  ]
+}
