@@ -1,0 +1,12 @@
+server:
+  port: ${SERVER_PORT:8080}
+
+spring:
+  application:
+    name: bff-service
+
+# users-function uses REST.
+# roles-function uses GraphQL through a single /api/graphql endpoint.
+functions:
+  users-base-url: ${FUNCTIONS_USERS_BASE_URL:http://localhost:7071/api}
+  roles-graphql-url: ${FUNCTIONS_ROLES_GRAPHQL_URL:http://localhost:7072/api/graphql}

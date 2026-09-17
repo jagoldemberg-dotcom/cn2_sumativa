@@ -1,0 +1,36 @@
+# Maven
+target/
+*.jar
+*.war
+*.class
+
+# Azure Functions
+functions/**/bin/
+functions/**/obj/
+functions/**/local.settings.json
+.azurefunctions/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.settings/
+.classpath
+.project
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+logs/
+
+# Docker
+docker-compose.override.yml
