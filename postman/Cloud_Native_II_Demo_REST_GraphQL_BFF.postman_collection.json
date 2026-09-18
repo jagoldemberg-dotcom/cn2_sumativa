@@ -1,0 +1,588 @@
+{
+  "info": {
+    "_postman_id": "581cdcfd-03f4-4cf4-8cdc-c0fd6c3ce213",
+    "name": "Cloud Native II - Demo REST + GraphQL + BFF",
+    "description": "Colección preparada para la evidencia de Cloud Native II. Incluye llamadas directas a Azure Functions (Users por REST y Roles por GraphQL) y llamadas al BFF desplegado en AWS EC2. Los requests de creación guardan IDs en variables de colección para poder actualizar, asociar roles y limpiar los datos de demostración.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "usersAzureBase",
+      "value": "https://cn2-users-grupo9-gae6bzcxc9fva5a2.westus3-01.azurewebsites.net/api",
+      "type": "string"
+    },
+    {
+      "key": "rolesAzureGraphql",
+      "value": "https://cn2-roles-grupo9-axchgnhweteraqbe.westus3-01.azurewebsites.net/api/graphql",
+      "type": "string"
+    },
+    {
+      "key": "bffBase",
+      "value": "http://34.237.153.158:8080",
+      "type": "string"
+    },
+    {
+      "key": "seedRoleId",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "directUserId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "directRoleId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "bffUserId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "bffRoleId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "00 - Verificación rápida",
+      "item": [
+        {
+          "name": "BFF - Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{bffBase}}/api/health",
+            "description": "Confirma que el contenedor Spring Boot del BFF está levantado en la EC2."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Azure REST - List users",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{usersAzureBase}}/users",
+            "description": "Prueba directa de la Azure Function REST de usuarios."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Azure GraphQL - Query roles",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{rolesAzureGraphql}}",
+            "description": "Prueba directa de la Azure Function GraphQL de roles.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query { roles { id name description } }\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('GraphQL data existe', () => pm.expect(pm.response.json()).to.have.property('data'));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "01 - Azure Function directa - USERS REST",
+      "item": [
+        {
+          "name": "01 - Listar usuarios",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{usersAzureBase}}/users",
+            "description": "GET REST directo a users-function. Lista todos los usuarios."
+          }
+        },
+        {
+          "name": "02 - Crear usuario demo (guarda directUserId)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{usersAzureBase}}/users",
+            "description": "POST REST directo. El test guarda el ID generado en directUserId.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"video_user_{{$timestamp}}\",\n  \"email\": \"video_{{$timestamp}}@duoc.cl\",\n  \"password\": \"Demo1234\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+                  "const j = pm.response.json(); if (j.id) pm.collectionVariables.set('directUserId', String(j.id));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "03 - Consultar usuario creado",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{usersAzureBase}}/users/{{directUserId}}",
+            "description": "GET REST por ID. También muestra los roles asociados al usuario."
+          }
+        },
+        {
+          "name": "04 - Actualizar usuario creado",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{usersAzureBase}}/users/{{directUserId}}",
+            "description": "PUT REST directo para actualizar username, email y password.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"video_user_actualizado\",\n  \"email\": \"video.actualizado@duoc.cl\",\n  \"password\": \"Demo5678\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "05 - Asignar rol ADMIN al usuario",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{usersAzureBase}}/users/{{directUserId}}/roles/{{seedRoleId}}",
+            "description": "POST REST directo para relacionar el usuario demo con el rol seed 1 (ADMIN)."
+          }
+        },
+        {
+          "name": "06 - Consultar usuario con roles",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{usersAzureBase}}/users/{{directUserId}}",
+            "description": "GET REST para evidenciar la relación con roles."
+          }
+        },
+        {
+          "name": "07 - Quitar rol ADMIN",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{usersAzureBase}}/users/{{directUserId}}/roles/{{seedRoleId}}",
+            "description": "DELETE REST de la asociación usuario-rol."
+          }
+        },
+        {
+          "name": "08 - Eliminar usuario demo",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{usersAzureBase}}/users/{{directUserId}}",
+            "description": "Limpieza del usuario creado durante la demostración."
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 - Azure Function directa - ROLES GraphQL",
+      "item": [
+        {
+          "name": "01 - Query roles: id, name, description",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{rolesAzureGraphql}}",
+            "description": "GraphQL usa un único endpoint. La query indica qué recurso y qué campos necesita el cliente.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query { roles { id name description } }\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "02 - Query roles: solo id y name (selección de campos)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{rolesAzureGraphql}}",
+            "description": "Ideal para el video: demuestra que GraphQL permite pedir solamente los campos requeridos.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query { roles { id name } }\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "03 - Query role por ID",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{rolesAzureGraphql}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query($id: ID!) { role(id: $id) { id name description } }\",\n  \"variables\": {\n    \"id\": \"{{seedRoleId}}\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "04 - Mutation crear rol demo (guarda directRoleId)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{rolesAzureGraphql}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation CreateRole($name: String!, $description: String) { createRole(name: $name, description: $description) { id name description } }\",\n  \"variables\": {\n    \"name\": \"VIDEO_ROLE_{{$timestamp}}\",\n    \"description\": \"Rol temporal creado directamente con GraphQL\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json(); const id = j?.data?.createRole?.id; if (id) pm.collectionVariables.set('directRoleId', String(id));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "05 - Mutation actualizar rol demo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{rolesAzureGraphql}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation UpdateRole($id: ID!, $name: String!, $description: String) { updateRole(id: $id, name: $name, description: $description) { id name description } }\",\n  \"variables\": {\n    \"id\": \"{{directRoleId}}\",\n    \"name\": \"VIDEO_ROLE_UPDATED_{{$timestamp}}\",\n    \"description\": \"Rol temporal actualizado con una mutation GraphQL\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "06 - Mutation eliminar rol demo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{rolesAzureGraphql}}",
+            "description": "Limpieza del rol creado en la demostración.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation DeleteRole($id: ID!) { deleteRole(id: $id) }\",\n  \"variables\": {\n    \"id\": \"{{directRoleId}}\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 - BFF AWS - USERS REST",
+      "item": [
+        {
+          "name": "01 - Listar usuarios por BFF",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{bffBase}}/api/users",
+            "description": "Cliente -> REST BFF en AWS -> REST users-function en Azure -> Oracle."
+          }
+        },
+        {
+          "name": "02 - Crear usuario por BFF (guarda bffUserId)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{bffBase}}/api/users",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"bff_user_{{$timestamp}}\",\n  \"email\": \"bff_{{$timestamp}}@duoc.cl\",\n  \"password\": \"Demo1234\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const j = pm.response.json(); if (j.id) pm.collectionVariables.set('bffUserId', String(j.id));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "03 - Consultar usuario por BFF",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{bffBase}}/api/users/{{bffUserId}}"
+          }
+        },
+        {
+          "name": "04 - Actualizar usuario por BFF",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{bffBase}}/api/users/{{bffUserId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"bff_user_actualizado\",\n  \"email\": \"bff.actualizado@duoc.cl\",\n  \"password\": \"Demo5678\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "05 - Asignar ADMIN por BFF",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{bffBase}}/api/users/{{bffUserId}}/roles/{{seedRoleId}}"
+          }
+        },
+        {
+          "name": "06 - Quitar ADMIN por BFF",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{bffBase}}/api/users/{{bffUserId}}/roles/{{seedRoleId}}"
+          }
+        },
+        {
+          "name": "07 - Eliminar usuario por BFF",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{bffBase}}/api/users/{{bffUserId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 - BFF AWS - ROLES REST hacia GraphQL",
+      "item": [
+        {
+          "name": "01 - Listar roles por BFF (REST -> GraphQL)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{bffBase}}/api/roles",
+            "description": "Petición REST al BFF. Internamente RolesGraphqlService construye una query GraphQL y llama a roles-function."
+          }
+        },
+        {
+          "name": "02 - Consultar rol por BFF",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{bffBase}}/api/roles/{{seedRoleId}}"
+          }
+        },
+        {
+          "name": "03 - Crear rol por BFF (guarda bffRoleId)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{bffBase}}/api/roles",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"BFF_ROLE_{{$timestamp}}\",\n  \"description\": \"Cliente REST al BFF, traducido internamente a mutation GraphQL\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const j = pm.response.json(); if (j.id) pm.collectionVariables.set('bffRoleId', String(j.id));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "04 - Actualizar rol por BFF",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{bffBase}}/api/roles/{{bffRoleId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"BFF_ROLE_UPDATED_{{$timestamp}}\",\n  \"description\": \"Actualizado por REST en BFF y GraphQL hacia Azure\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "05 - Eliminar rol por BFF",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{bffBase}}/api/roles/{{bffRoleId}}",
+            "description": "Limpieza del rol temporal creado por BFF."
+          }
+        }
+      ]
+    }
+  ]
+}
