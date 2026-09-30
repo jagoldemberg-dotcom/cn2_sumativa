@@ -1,0 +1,170 @@
+{
+  "info": {
+    "_postman_id": "704bb3eb-23f6-417c-9ac2-d56a7296e20f",
+    "name": "Cloud Native II - Event Grid y auditoría",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Ejecutar en orden. Cambiar demoSuffix en cada corrida. Function key privada en el entorno, nunca en Git."
+  },
+  "item": [
+    {
+      "name": "01 Salud BFF",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{bffBase}}/api/health"
+      }
+    },
+    {
+      "name": "02 Crear usuario BFF REST",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{bffBase}}/api/users",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"username\": \"demo_eventos_{{demoSuffix}}\", \"email\": \"demo_{{demoSuffix}}@example.org\", \"password\": \"Demo12345\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "if (pm.response.code === 201) pm.collectionVariables.set('demoUserId', pm.response.json().id);"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 Actualizar usuario BFF REST",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{bffBase}}/api/users/{{demoUserId}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"username\": \"demo_editado_{{demoSuffix}}\", \"email\": \"editado_{{demoSuffix}}@example.org\"}"
+        }
+      }
+    },
+    {
+      "name": "04 Crear rol directo GraphQL",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{rolesAzureGraphql}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"query\": \"mutation { createRole(name: \\\"DEMO_{{demoSuffix}}\\\", description: \\\"Evento de prueba\\\") { id name description } }\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "let d = pm.response.json(); if (d.data && d.data.createRole) pm.collectionVariables.set('demoRoleId', d.data.createRole.id);"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 Asignar rol al usuario BFF",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": "{{bffBase}}/api/users/{{demoUserId}}/roles/{{demoRoleId}}"
+      }
+    },
+    {
+      "name": "06 Consultar usuario y roles BFF",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{bffBase}}/api/users/{{demoUserId}}"
+      }
+    },
+    {
+      "name": "07 Consultar eventos consumidos",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{eventsAzureBase}}/events?code={{eventsFunctionKey}}"
+      }
+    },
+    {
+      "name": "08 Quitar rol BFF",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": "{{bffBase}}/api/users/{{demoUserId}}/roles/{{demoRoleId}}"
+      }
+    },
+    {
+      "name": "09 Eliminar usuario BFF",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": "{{bffBase}}/api/users/{{demoUserId}}"
+      }
+    },
+    {
+      "name": "10 Eliminar rol directo GraphQL",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{rolesAzureGraphql}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"query\": \"mutation { deleteRole(id: \\\"{{demoRoleId}}\\\") }\"}"
+        }
+      }
+    },
+    {
+      "name": "11 Consultar auditoría final",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{eventsAzureBase}}/events?code={{eventsFunctionKey}}"
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "demoUserId",
+      "value": ""
+    },
+    {
+      "key": "demoRoleId",
+      "value": ""
+    },
+    {
+      "key": "demoSuffix",
+      "value": "cambiar_01"
+    }
+  ]
+}

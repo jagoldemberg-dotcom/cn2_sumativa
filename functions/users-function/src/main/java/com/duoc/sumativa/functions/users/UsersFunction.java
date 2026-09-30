@@ -121,6 +121,8 @@ public class UsersFunction {
             created.put("id", generatedId);
             created.put("username", username);
             created.put("email", email);
+            EventPublisher.publish("Sumativa.UserCreated", "users/" + generatedId,
+                    Map.of("entityId", generatedId, "username", username), context.getLogger());
             return jsonResponse(request, HttpStatus.CREATED, created);
         } catch (SQLException e) {
             context.getLogger().severe("createUser failed: " + e.getMessage());
@@ -178,6 +180,8 @@ public class UsersFunction {
             result.put("id", id);
             result.put("username", username);
             result.put("email", email);
+            EventPublisher.publish("Sumativa.UserUpdated", "users/" + id,
+                    Map.of("entityId", id, "username", username), context.getLogger());
             return jsonResponse(request, HttpStatus.OK, result);
         } catch (SQLException e) {
             context.getLogger().severe("updateUser failed: " + e.getMessage());
@@ -204,6 +208,8 @@ public class UsersFunction {
             if (deleted == 0) {
                 return errorResponse(request, HttpStatus.NOT_FOUND, "User " + id + " not found");
             }
+            EventPublisher.publish("Sumativa.UserDeleted", "users/" + id,
+                    Map.of("entityId", id), context.getLogger());
             return request.createResponseBuilder(HttpStatus.NO_CONTENT).build();
         } catch (SQLException e) {
             context.getLogger().severe("deleteUser failed: " + e.getMessage());
@@ -234,6 +240,8 @@ public class UsersFunction {
             result.put("userId", id);
             result.put("roleId", roleId);
             result.put("status", "ASSIGNED");
+            EventPublisher.publish("Sumativa.UserRoleAssigned", "users/" + id,
+                    Map.of("entityId", id, "roleId", roleId), context.getLogger());
             return jsonResponse(request, HttpStatus.CREATED, result);
         } catch (SQLException e) {
             context.getLogger().severe("assignRoleToUser failed: " + e.getMessage());
@@ -262,6 +270,8 @@ public class UsersFunction {
             if (deleted == 0) {
                 return errorResponse(request, HttpStatus.NOT_FOUND, "Role assignment not found for user " + id + " and role " + roleId);
             }
+            EventPublisher.publish("Sumativa.UserRoleRemoved", "users/" + id,
+                    Map.of("entityId", id, "roleId", roleId), context.getLogger());
             return request.createResponseBuilder(HttpStatus.NO_CONTENT).build();
         } catch (SQLException e) {
             context.getLogger().severe("removeRoleFromUser failed: " + e.getMessage());

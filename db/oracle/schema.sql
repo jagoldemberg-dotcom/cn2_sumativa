@@ -41,6 +41,15 @@ EXCEPTION
 END;
 /
 
+-- Reset audit table when rebuilding a development volume.
+BEGIN
+   EXECUTE IMMEDIATE 'DROP TABLE EVENT_AUDIT CASCADE CONSTRAINTS';
+EXCEPTION
+   WHEN OTHERS THEN
+      IF SQLCODE != -942 THEN RAISE; END IF;
+END;
+/
+
 -- =====================================================================
 -- USERS
 -- =====================================================================
@@ -73,4 +82,14 @@ CREATE TABLE USER_ROLES (
     CONSTRAINT PK_USER_ROLES PRIMARY KEY (USER_ID, ROLE_ID),
     CONSTRAINT FK_USER_ROLES_USER FOREIGN KEY (USER_ID) REFERENCES USERS (ID) ON DELETE CASCADE,
     CONSTRAINT FK_USER_ROLES_ROLE FOREIGN KEY (ROLE_ID) REFERENCES ROLES (ID) ON DELETE CASCADE
+);
+
+-- Event Grid consumer audit. EVENT_ID is unique to make redelivery idempotent.
+CREATE TABLE EVENT_AUDIT (
+    EVENT_ID        VARCHAR2(80) PRIMARY KEY,
+    EVENT_TYPE      VARCHAR2(120) NOT NULL,
+    SUBJECT         VARCHAR2(255) NOT NULL,
+    EVENT_TIME      VARCHAR2(40),
+    EVENT_DATA      VARCHAR2(4000),
+    RECEIVED_AT     TIMESTAMP DEFAULT SYSTIMESTAMP NOT NULL
 );

@@ -30,6 +30,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.logging.Logger;
 
 /**
  * Azure Function that exposes the ROLES domain through GraphQL.
@@ -46,6 +47,7 @@ import java.util.Optional;
 public class RolesFunction {
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
+    private static final Logger LOGGER = Logger.getLogger(RolesFunction.class.getName());
 
     private static final String SCHEMA = """
             type Role {
@@ -185,6 +187,8 @@ public class RolesFunction {
                 role.put("id", keys.getLong(1));
                 role.put("name", name);
                 role.put("description", description);
+                EventPublisher.publish("Sumativa.RoleCreated", "roles/" + role.get("id"),
+                        Map.of("entityId", role.get("id"), "name", name), LOGGER);
                 return role;
             }
         }
@@ -209,6 +213,8 @@ public class RolesFunction {
             role.put("id", id);
             role.put("name", name);
             role.put("description", description);
+            EventPublisher.publish("Sumativa.RoleUpdated", "roles/" + id,
+                    Map.of("entityId", id, "name", name), LOGGER);
             return role;
         }
     }
@@ -220,7 +226,12 @@ public class RolesFunction {
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setLong(1, id);
-            return ps.executeUpdate() > 0;
+            boolean deleted = ps.executeUpdate() > 0;
+            if (deleted) {
+                EventPublisher.publish("Sumativa.RoleDeleted", "roles/" + id,
+                        Map.of("entityId", id), LOGGER);
+            }
+            return deleted;
         }
     }
 

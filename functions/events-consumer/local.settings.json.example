@@ -1,0 +1,11 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "java",
+    "ORACLE_URL": "jdbc:oracle:thin:@//localhost:1521/XEPDB1",
+    "ORACLE_USER": "sumativa",
+    "ORACLE_PASSWORD": "replace-me"
+  },
+  "Host": {"LocalHttpPort": 7073}
+}
