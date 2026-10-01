@@ -173,3 +173,9 @@ ORACLE_PASSWORD=<ORACLE_APP_PASSWORD>
 ## Despliegue
 
 Seguir `GUIA_DESPLIEGUE_AWS_AZURE.md`.
+
+## Ampliación sumativa semana 8: Azure Event Grid
+
+Los dos emisores Java publican ocho tipos de eventos después de mutaciones exitosas. El nuevo proyecto `functions/events-consumer` recibe eventos en `consumeUserRoleEvent` y registra `EVENT_AUDIT` en Oracle; `GET /api/events` consulta la auditoría con function key. Consulte `docs/GUIA_DESPLIEGUE_EVENT_GRID.md`, `docs/DIAGRAMAS.md`, `docs/INFORME_ENTREGA.md` y `docs/GUIA_VIDEO_DOS_PARTICIPANTES.md`. Para la demostración, importar la colección y el entorno `postman/Cloud_Native_II_Event_Grid.*.json`.
+
+**No desplegar los `*-deploy.zip` heredados de la entrega anterior:** recompilar las Functions desde el código Java modificado. La publicación directa es best effort tras la escritura en Oracle; ver sus límites en la guía. El archivo de migración para un volumen existente está en `docs/migrate_existing.sql`.
